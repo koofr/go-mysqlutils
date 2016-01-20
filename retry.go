@@ -10,7 +10,7 @@ type DB interface {
 	Begin() (*sql.Tx, error)
 }
 
-func MysqlRetry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sql.Tx) error) error {
+func Retry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sql.Tx) error) error {
 	return func(f func(*sql.Tx) error) error {
 		var lastErr error
 
@@ -22,7 +22,7 @@ func MysqlRetry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sq
 
 			tx, err := db.Begin()
 			if err != nil {
-				if MysqlIsErrorIn(err, expectedErrorNumbers...) {
+				if IsErrorIn(err, expectedErrorNumbers...) {
 					lastErr = err
 					continue
 				} else {
@@ -31,7 +31,9 @@ func MysqlRetry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sq
 			}
 
 			if err = f(tx); err != nil {
-				if MysqlIsErrorIn(err, expectedErrorNumbers...) {
+				tx.Rollback()
+
+				if IsErrorIn(err, expectedErrorNumbers...) {
 					lastErr = err
 					continue
 				} else {
@@ -40,7 +42,7 @@ func MysqlRetry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sq
 			}
 
 			if err = tx.Commit(); err != nil {
-				if MysqlIsErrorIn(err, expectedErrorNumbers...) {
+				if IsErrorIn(err, expectedErrorNumbers...) {
 					lastErr = err
 					continue
 				} else {
@@ -55,6 +57,6 @@ func MysqlRetry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sq
 	}
 }
 
-func MysqlRetryDefault(db *sql.DB, retries int) func(f func(*sql.Tx) error) error {
-	return MysqlRetry(db, retries, MYSQL_ERROR_LOCK_DEADLOCK)
+func RetryDefault(db *sql.DB, retries int) func(f func(*sql.Tx) error) error {
+	return Retry(db, retries, ERROR_LOCK_DEADLOCK, ERROR_QUERY_INTERRUPTED)
 }

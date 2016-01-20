@@ -5,10 +5,12 @@ import (
 )
 
 const (
-	MYSQL_ERROR_LOCK_DEADLOCK = 1213
+	ERROR_DUP_ENTRY         = 1062
+	ERROR_LOCK_DEADLOCK     = 1213
+	ERROR_QUERY_INTERRUPTED = 1317
 )
 
-func MysqlIsErrorIn(err error, expectedErrorNumbers ...int) bool {
+func IsErrorIn(err error, expectedErrorNumbers ...int) bool {
 	if mysqlErr, ok := err.(*mysql.MySQLError); ok {
 		errNumber := int(mysqlErr.Number)
 

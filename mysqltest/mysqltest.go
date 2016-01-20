@@ -98,6 +98,10 @@ func MysqlBeforeSuite() {
 
 func MysqlBeforeEach() {
 	DeleteData()
+
+	TX = nil
+
+	RefreshTx()
 }
 
 func MysqlAfterEach() {
