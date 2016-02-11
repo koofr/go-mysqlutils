@@ -58,5 +58,5 @@ func Retry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sql.Tx)
 }
 
 func RetryDefault(db *sql.DB, retries int) func(f func(*sql.Tx) error) error {
-	return Retry(db, retries, ERROR_LOCK_DEADLOCK, ERROR_QUERY_INTERRUPTED)
+	return Retry(db, retries, ERROR_LOCK_DEADLOCK, ERROR_QUERY_INTERRUPTED, ERROR_LOCK_WAIT_TIMEOUT)
 }
