@@ -2,6 +2,7 @@ package mysqlutils
 
 import (
 	"database/sql"
+	"errors"
 	"math/rand"
 	"time"
 )
@@ -9,6 +10,8 @@ import (
 type DB interface {
 	Begin() (*sql.Tx, error)
 }
+
+var ErrForceRetry = errors.New("mysqlutils force retry")
 
 func Retry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sql.Tx) error) error {
 	return func(f func(*sql.Tx) error) error {
@@ -33,7 +36,7 @@ func Retry(db DB, retries int, expectedErrorNumbers ...int) func(f func(*sql.Tx)
 			if err = f(tx); err != nil {
 				tx.Rollback()
 
-				if IsErrorIn(err, expectedErrorNumbers...) {
+				if IsErrorIn(err, expectedErrorNumbers...) || err == ErrForceRetry {
 					lastErr = err
 					continue
 				} else {
