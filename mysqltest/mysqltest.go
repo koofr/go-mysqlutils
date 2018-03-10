@@ -23,6 +23,20 @@ var ConnStrWithDb string
 var DB *sql.DB
 var TX *sql.Tx
 
+type TestingConfig struct {
+	HostsEnvKey      string
+	UsernameEnvKey   string
+	PasswordEnvKey   string
+	DatabaseEnvKey   string
+	ReplicatedEnvKey string
+}
+
+func DatabaseEnvKey(key string) func(cfg *TestingConfig) {
+	return func(cfg *TestingConfig) {
+		cfg.DatabaseEnvKey = key
+	}
+}
+
 func DeleteData() {
 	tables := []string{}
 
@@ -56,15 +70,27 @@ func RefreshTx() {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func MysqlInitTesting(t *testing.T) bool {
-	MysqlHosts = os.Getenv("MYSQL_HOSTS")
-	MysqlUsername = os.Getenv("MYSQL_USERNAME")
-	MysqlPassword = os.Getenv("MYSQL_PASSWORD")
-	MysqlDatabase = os.Getenv("MYSQL_DATABASE")
-	mysqlReplicated := os.Getenv("MYSQL_REPLICATED") == "true"
+func MysqlInitTesting(t *testing.T, opts ...func(*TestingConfig)) bool {
+	cfg := &TestingConfig{
+		HostsEnvKey:      "MYSQL_HOSTS",
+		UsernameEnvKey:   "MYSQL_USERNAME",
+		PasswordEnvKey:   "MYSQL_PASSWORD",
+		DatabaseEnvKey:   "MYSQL_DATABASE",
+		ReplicatedEnvKey: "MYSQL_REPLICATED",
+	}
+
+	for _, option := range opts {
+		option(cfg)
+	}
+
+	MysqlHosts = os.Getenv(cfg.HostsEnvKey)
+	MysqlUsername = os.Getenv(cfg.UsernameEnvKey)
+	MysqlPassword = os.Getenv(cfg.PasswordEnvKey)
+	MysqlDatabase = os.Getenv(cfg.DatabaseEnvKey)
+	mysqlReplicated := os.Getenv(cfg.ReplicatedEnvKey) == "true"
 
 	if MysqlHosts == "" || MysqlUsername == "" || MysqlPassword == "" || MysqlDatabase == "" {
-		t.Skip("Missing MYSQL_HOSTS, MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_DATABASE env variables")
+		t.Skip(fmt.Sprintf("Missing %s, %s, %s, %s env variables", cfg.HostsEnvKey, cfg.UsernameEnvKey, cfg.PasswordEnvKey, cfg.DatabaseEnvKey))
 		return false
 	}
 
